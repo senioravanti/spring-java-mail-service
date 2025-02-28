@@ -1,0 +1,46 @@
+name: 
+  'mail-service'
+
+volumes:
+  mail-service-database-data:
+    driver: local
+
+services:
+  database:
+    image: 'postgres:17.2'
+    restart: 'unless-stopped'
+
+    container_name: database
+
+    volumes:
+      - 'mail-service-database-data:/var/lib/postgresql/data'
+
+    environment:
+      POSTGRES_PASSWORD: '147258'
+
+    ports:
+      - '${DATABASE_PORT}:5432'
+
+  mail-server:
+    image: 'apache/james:jpa-3.8.2'
+    restart: 'on-failure:3'
+
+    container_name: 'mail-server'
+    hostname: 'mail-server.local'
+
+    depends_on:
+      database:
+        condition: service_started
+
+    volumes:
+      - './docker/mail-server/james-database.properties:/root/conf/james-database.properties'
+      - './docker/mail-server/jars/postgresql-42.7.5.jar:/root/libs/james-jdbc-driver.jar'
+      # keytool -genkey -alias james -keyalg RSA -storepass 'james72laBalle' -keystore ./docker/mail-server/keystore -dname "CN=MananikovAnton, C=Russia" -validity 365
+      - './docker/mail-server/keystore:/root/conf/keystore'
+      - './docker/mail-server/entrypoint.sh:/usr/local/bin/entrypoint.sh'
+  
+    ports:
+      - '587:587'
+    
+
+
